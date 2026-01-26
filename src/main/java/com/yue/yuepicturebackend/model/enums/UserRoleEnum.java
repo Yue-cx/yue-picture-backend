@@ -21,11 +21,12 @@ public enum UserRoleEnum {
         this.value = value;
     }
 
-/**
- * 根据值获取对应的枚举实例
- * @param value 要匹配的值
- * @return 如果找到匹配的枚举实例则返回，否则返回null
- */
+    /**
+     * 根据值获取对应的枚举实例
+     *
+     * @param value 要匹配的值
+     * @return 如果找到匹配的枚举实例则返回，否则返回null
+     */
     public static UserRoleEnum getEnumByValue(String value) {
         // 如果传入的值为空，直接返回null
         if (ObjUtil.isEmpty(value)) {
