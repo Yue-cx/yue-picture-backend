@@ -9,7 +9,7 @@ import com.yue.yuepicturebackend.constant.UserConstant;
 import com.yue.yuepicturebackend.exception.BusinessException;
 import com.yue.yuepicturebackend.exception.ErrorCode;
 import com.yue.yuepicturebackend.exception.ThrowUtils;
-import com.yue.yuepicturebackend.model.dto.*;
+import com.yue.yuepicturebackend.model.dto.user.*;
 import com.yue.yuepicturebackend.model.entity.User;
 import com.yue.yuepicturebackend.model.vo.LoginUserVO;
 import com.yue.yuepicturebackend.model.vo.UserVO;

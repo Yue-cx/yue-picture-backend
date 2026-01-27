@@ -1,7 +1,7 @@
 package com.yue.yuepicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.yue.yuepicturebackend.model.dto.UserQueryRequest;
+import com.yue.yuepicturebackend.model.dto.user.UserQueryRequest;
 import com.yue.yuepicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yue.yuepicturebackend.model.vo.LoginUserVO;
