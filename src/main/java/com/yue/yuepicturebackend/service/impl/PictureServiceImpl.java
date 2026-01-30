@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yue.yuepicturebackend.exception.BusinessException;
 import com.yue.yuepicturebackend.exception.ErrorCode;
 import com.yue.yuepicturebackend.exception.ThrowUtils;
+import com.yue.yuepicturebackend.manager.CosManager;
 import com.yue.yuepicturebackend.manager.upload.FilePictureUpload;
 import com.yue.yuepicturebackend.manager.upload.PictureUploadTemplate;
 import com.yue.yuepicturebackend.manager.upload.UrlPictureUpload;
@@ -31,6 +32,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -61,6 +63,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Resource
     private UserService userService;
 
+    @Resource
+    private CosManager cosManager;
+
     /**
      * 上传图片
      * @param inputSource
@@ -76,12 +81,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
         // 用于判断是新增还是更新图片
         Long pictureId = null;
+        Picture oldPicture = null;
         if (pictureUploadRequest != null) {
             pictureId = pictureUploadRequest.getId();
         }
         // 如果是更新图片，需要校验图片是否存在
         if (pictureId != null) {
-            Picture oldPicture = this.getById(pictureId);
+            oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
             // 仅本人或管理员可编辑
             if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
@@ -100,6 +106,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 构造要入库的图片信息
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         //支持外层传递图片名称
         String picName = uploadPictureResult.getPicName();
         if (pictureUploadRequest != null && StrUtil.isNotBlank(pictureUploadRequest.getPicName())) {
@@ -122,6 +129,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
         boolean result = this.saveOrUpdate(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片上传失败");
+        if (pictureId != null) {
+            this.clearPictureFile(oldPicture);
+        }
         return PictureVO.objToVo(picture);
     }
 
@@ -368,6 +378,51 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             // 非管理员，创建或编辑都要改为待审核
             picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
         }
+    }
+
+    /**
+     * 清理图片文件
+     * @param oldPicture
+     */
+    @Async
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        // 判断该图片是否被多条记录使用
+        String pictureUrl = oldPicture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        // 有不止一条记录用到了该图片，不清理
+        if (count > 1) {
+            return;
+        }
+        String key = extractCosKeyFromUrl(pictureUrl);
+        cosManager.deleteObject(key);
+        // 清理缩略图
+        String thumbnailUrl = oldPicture.getThumbnailUrl();
+        if (StrUtil.isNotBlank(thumbnailUrl)) {
+            String thumbnailKey = extractCosKeyFromUrl(thumbnailUrl);
+            cosManager.deleteObject(thumbnailKey);
+        }
+    }
+
+    /**
+     * 核心工具方法：从带域名的完整URL中提取COS的文件Key（存储路径）
+     * @param fullUrl 带域名的图片完整URL
+     * @return COS文件的Key/存储路径
+     */
+    private String extractCosKeyFromUrl(String fullUrl) {
+        if (StrUtil.isBlank(fullUrl) || !fullUrl.contains("://")) {
+            return fullUrl; // 非URL格式，直接返回（避免报错）
+        }
+        // 步骤1：截取域名后的部分（如https://xxx.com/xxx.jpg → 截取为/xxx.jpg）
+        String path = fullUrl.substring(fullUrl.indexOf("://") + 3);
+        path = path.substring(path.indexOf("/") + 1);
+        // 步骤2：如果有多余的参数（如?x-oss-process=xxx），截取掉
+        if (path.contains("?")) {
+            path = path.substring(0, path.indexOf("?"));
+        }
+        return path;
     }
 }
 
