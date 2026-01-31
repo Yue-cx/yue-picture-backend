@@ -2,10 +2,7 @@ package com.yue.yuepicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.yue.yuepicturebackend.model.dto.picture.PictureQueryRequest;
-import com.yue.yuepicturebackend.model.dto.picture.PictureReviewRequest;
-import com.yue.yuepicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.yue.yuepicturebackend.model.dto.picture.PictureUploadRequest;
+import com.yue.yuepicturebackend.model.dto.picture.*;
 import com.yue.yuepicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yue.yuepicturebackend.model.entity.User;
@@ -33,6 +30,30 @@ public interface PictureService extends IService<Picture> {
     PictureVO uploadPicture(Object inputSource,
                             PictureUploadRequest pictureUploadRequest,
                             User loginUser);
+
+    /**
+     * 删除图片
+     *
+     * @param pictureId
+     * @param loginUser
+     */
+    void deletePicture(long pictureId, User loginUser);
+
+    /**
+     * 编辑图片
+     *
+     * @param pictureEditRequest
+     * @param loginUser
+     */
+    void editPicture(PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
+     * 检查图片权限
+     *
+     * @param loginUser
+     * @param picture
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
 
     /**
      * 批量抓取和创建图片

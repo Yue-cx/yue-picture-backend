@@ -20,6 +20,11 @@ public class Picture implements Serializable {
     private Long id;
 
     /**
+     * 空间 id（为空表示公共空间）
+     */
+    private Long spaceId;
+
+    /**
      * 图片 url
      */
     private String url;
